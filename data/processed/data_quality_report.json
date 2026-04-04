@@ -1,0 +1,25 @@
+{
+    "email_edges": 123308,
+    "prox_edges": 78249,
+    "unique_emails": 198,
+    "unique_prox_nodes": 217,
+    "overlapping_nodes": 198,
+    "email_missingness": {
+        "sender": 0,
+        "recipient": 0,
+        "timestamp": 0,
+        "department": 0,
+        "time_norm": 0,
+        "sender_clean": 0,
+        "recipient_clean": 0,
+        "sender_canon": 0,
+        "recipient_canon": 0
+    },
+    "prox_missingness": {
+        "timestamp": 0,
+        "i": 0,
+        "j": 0,
+        "duration": 0,
+        "time_norm": 0
+    }
+}
