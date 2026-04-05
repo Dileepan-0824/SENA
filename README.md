@@ -146,203 +146,117 @@ The model is a **TemporalRiskMLP** — a 3-layer neural network trained with str
 
 ## Output Plots — Detailed Guide
 
-All plots are saved as separate images in the `outputs/` directory. Below is a detailed breakdown of every plot, including what each axis measures, the units used, and what patterns to look for.
+All plots are saved as separate images in the `outputs/` directory.
 
 ---
 
 ### Drift Plots (Brokerage Drift Analysis)
 
-These 6 plots form the core brokerage drift analysis. They all use a dark theme for readability.
+Two simple line charts showing how the top 10 brokers change over ~180 weeks. Both plots track the same set of brokers (ranked by average betweenness) so you can cross-reference them.
 
-#### 1. `drift_01_broker_trajectories.png` — Broker Influence Over Time
+#### `drift_temporal_betweenness.png` — Betweenness Over Time
 
-Tracks how the top 12 most influential brokers' centrality changes week-by-week. This is the "storyline" of the project — you can see individual brokers rise and fall.
-
-| Axis | Metric | Unit / Scale | Notes |
-|------|--------|-------------|-------|
-| **X-axis** | Time Bin (Week) | Integer week index, 0–180 | Each tick = one week. Bin 0 is the earliest week in the dataset. The email layer spans ~3.5 years of Enron data; proximity spans a different period but is aligned to the same bin index. |
-| **Y-axis** | Temporal Betweenness | Dimensionless, range 0.0–0.5 | Normalized betweenness centrality. A value of 0.25 means this node sits on ~25% of all shortest paths in the network that week. Higher = more influential as a bridge. The values are smoothed with a 5-point moving average for readability. |
-| **Red dots** | Drift events | Binary flag | A dot appears whenever a broker's raw (unsmoothed) betweenness drops by more than **0.1** (i.e., >10 percentage points of shortest paths) from one week to the next. |
-| **Line colors** | Department | Categorical | Each broker's line is colored by their department (legend at bottom). |
-
-**What to look for:** Sudden downward spikes with red dots = a broker losing their bridge position. Flat lines = stable brokers. Lines that trend downward over many weeks = gradual marginalization.
-
----
-
-#### 2. `drift_02_event_waterfall.png` — Drift Event Timeline
-
-Every single drift event across all nodes, laid out as a timeline. This is the "big picture" view — it answers *when* does drift happen across the organization?
+A line chart tracking each broker's **temporal betweenness centrality** week by week. This directly shows *who is a bridge and when they lose that position*.
 
 | Axis | Metric | Unit / Scale | Notes |
 |------|--------|-------------|-------|
-| **X-axis** | Time Bin (Week) | Integer week index, 0–180 | Same weekly bins as Plot 1. |
-| **Y-axis** | Drifting Node (ordinal) | Arbitrary ordering, 0–N | Each unique node that drifted at least once gets a row. Nodes are sorted by **first drift time** — nodes at the bottom drifted first, nodes at the top drifted later. There are no y-axis labels because there are too many nodes. |
-| **Dot colors** | Department | Categorical | Colored by department from the `node_departments.csv` mapping. |
+| **X-axis** | Time Bin (Week) | Integer, 0–180 | Each tick = one week of network activity. |
+| **Y-axis** | Temporal Betweenness | Dimensionless, 0.0–0.5 | Fraction of all shortest paths passing through this node. 0.40 = 40% of all paths. Smoothed with 5-week moving average. |
+| **Each line** | One broker | Color-coded by node | Legend shows Node ID and department. Labels at line endpoints. |
 
-**What to look for:** Dense **vertical columns** of dots = many nodes drifted in the same week (systemic shock). Sparse dots = isolated individual drift. Diagonal patterns = cascading drift spreading through the network over consecutive weeks.
+**What to look for:** Lines trending downward = a broker losing influence over time (drift). Sharp drops = sudden structural changes. Lines staying flat = stable brokers. If betweenness drops AND constraint rises for the same node → classic brokerage drift.
 
 ---
 
-#### 3. `drift_03_population_drift_rate.png` — Population Drift Rate
+#### `drift_burt_constraint.png` — Constraint Over Time
 
-Shows the organization-wide drift prevalence over time. This answers: *is drift getting worse?*
+A line chart tracking each broker's **Burt constraint** week by week. This shows *how trapped each broker becomes in their own clique over time*.
 
 | Axis | Metric | Unit / Scale | Notes |
 |------|--------|-------------|-------|
-| **X-axis** | Time Bin (Week) | Integer week index, 0–180 | Same weekly bins. |
-| **Y-axis** | Drift Fraction | Ratio, range 0.0–1.0 | The fraction of all active nodes in that week that experienced drift. A value of 0.3 means 30% of nodes drifted that week. Smoothed with a 5-point moving average. |
-| **Blue line + fill** | Target A: Betweenness Drop | Fraction of nodes where betweenness fell > 0.1 | Week-over-week fraction of nodes losing bridge position. |
-| **Gold line + fill** | Target B: Constraint Rise | Fraction of nodes where constraint rose > 0.2 | Week-over-week fraction of nodes becoming more trapped. |
+| **X-axis** | Time Bin (Week) | Integer, 0–180 | Same weekly bins as betweenness plot. |
+| **Y-axis** | Burt Constraint | Dimensionless, 0.0–1.0 | 0 = completely unconstrained (perfect broker). 1 = fully trapped (all contacts know each other). Smoothed with 5-week moving average. |
+| **Each line** | One broker | Color-coded by node | Same node-to-color mapping as the betweenness plot. |
 
-**What to look for:** Sustained high rates (~30%+) = chronic organizational instability. Sudden spikes = shock events. The two lines tracking each other = betweenness loss and constraint gain are correlated (expected — losing bridges often means getting trapped).
-
----
-
-#### 4. `drift_04_phase_portrait.png` — Betweenness vs Constraint Phase Space
-
-A 2D scatter that shows where each node-week observation sits in "influence space" and which ones are about to drift. The arrows show *where drifters are headed*.
-
-| Axis | Metric | Unit / Scale | Notes |
-|------|--------|-------------|-------|
-| **X-axis** | Temporal Betweenness | Dimensionless, 0.0–0.5 | Same normalized betweenness as Plot 1. Right side = high influence (broker). Left side = low influence (peripheral). |
-| **Y-axis** | Burt Constraint | Dimensionless, 0.0–1.0 | Burt's structural constraint. Top = heavily constrained (trapped in clique). Bottom = unconstrained (spanning structural holes). |
-| **Grey dots** | Stable nodes | — | Node-week observations where neither Target A nor Target B triggered the next week. |
-| **Red ▼ triangles** | Drift A nodes | — | Nodes about to lose betweenness (> 0.1 drop next week). Note they cluster at higher betweenness — you need to *have* influence to *lose* it. |
-| **Gold ▲ triangles** | Drift B nodes | — | Nodes about to gain constraint (> 0.2 increase next week). These cluster at lower constraint — they're about to get trapped. |
-| **Red arrows** | Drift direction vectors | Δbetweenness, Δconstraint | Drawn for the 30 most dramatic Target A drifters. Arrow tail = current position, arrow head = next-week position. Arrows pointing **left** = losing betweenness. Arrows pointing **up** = gaining constraint. |
-
-**What to look for:** Arrows consistently pointing left-and-up = brokers are simultaneously losing centrality and getting trapped. Clustering of red triangles at the right edge = high-influence brokers are the ones most at risk.
-
----
-
-#### 5. `drift_05_risk_heatmap.png` — Predicted Drift Risk Heatmap
-
-The model's output: predicted probability of drift for the 25 most at-risk nodes over time. This is the **actionable** plot — it tells you *who* is about to drift and *when*.
-
-| Axis | Metric | Unit / Scale | Notes |
-|------|--------|-------------|-------|
-| **X-axis** | Time Bin (Week) | Integer week index | Only shows the time windows covered by the evaluation folds (roughly the last 80% of the dataset, since TimeSeriesSplit uses expanding training windows). |
-| **Y-axis** | Node ID | Numeric node identifiers | The 25 nodes with the highest mean predicted drift risk. Sorted top-to-bottom by decreasing average risk. |
-| **Color scale** | Predicted Drift Probability | Continuous, 0.0–1.0 | Dark blue/black = low risk (< 0.2). Red = moderate risk (0.4–0.7). Bright red = high risk (> 0.7). The scale is a custom gradient: `#181c25 → #1a3a5c → #ff6b6b → #ff2222`. |
-
-**What to look for:** Persistent hot-red horizontal bands = chronically at-risk nodes. Intermittent red patches = episodic risk. Cool (dark) rows = stable nodes that rarely trigger the model.
-
----
-
-#### 6. `drift_06_model_evaluation.png` — ROC & Precision-Recall Curves
-
-Standard ML evaluation showing the model's discriminative ability for both prediction targets.
-
-| Panel | Metric | Unit / Scale | Notes |
-|-------|--------|-------------|-------|
-| **Left panel: ROC Curve** | | | |
-| X-axis | False Positive Rate (FPR) | Ratio, 0.0–1.0 | Fraction of non-drifters incorrectly flagged as drifters. |
-| Y-axis | True Positive Rate (TPR) | Ratio, 0.0–1.0 | Fraction of actual drifters correctly identified. |
-| Dashed diagonal | Random classifier baseline | — | A model no better than coin-flipping follows this line (AUC = 0.5). |
-| **Right panel: PR Curve** | | | |
-| X-axis | Recall | Ratio, 0.0–1.0 | Of all actual drifters, what fraction did the model catch? |
-| Y-axis | Precision | Ratio, 0.0–1.0 | Of all nodes the model flagged as drifters, what fraction actually drifted? |
-| **AUC** | Area Under the ROC Curve | Dimensionless, 0.5–1.0 | 0.84 = the model ranks a random drifter above a random non-drifter 84% of the time. |
-| **AP** | Average Precision | Dimensionless, 0.0–1.0 | 0.65 = weighted mean precision across all recall thresholds. Accounts for class imbalance better than AUC. |
-
-**What to look for:** Curves hugging the top-left corner = strong model. AUC > 0.8 = good discriminative power. AP > 0.5 with ~32% class prevalence = meaningful lift over random.
+**What to look for:** Lines trending upward = a broker getting increasingly trapped. A node with rising constraint AND falling betweenness is undergoing textbook brokerage drift.
 
 ---
 
 ### SENA Diagnostic Plots (Earlier Pipeline Stages)
 
-These 4 plots are generated by `replicate_visualizations.py` and capture the structural properties of the multiplex network.
+These 4 plots capture the structural properties of the multiplex network.
 
 #### `stage4_homophily_constraint_scatter.png` — Homophily vs Constraint Scatter
 
-Shows the relationship between how much a node talks to their own department (homophily) and how structurally trapped they are (constraint). This tests the project's core hypothesis: *does department insularity predict brokerage weakness?*
+Shows whether department insularity predicts brokerage weakness.
 
 | Axis | Metric | Unit / Scale | Notes |
 |------|--------|-------------|-------|
-| **X-axis** | Coleman Homophily | Dimensionless ratio, ~0.5–1.0 | Fraction of a node's interactions that are with same-department peers. Averaged across all time windows per node. Values near 0.5 = roughly equal cross-department and same-department interaction. Values near 1.0 = almost exclusively same-department. |
-| **Y-axis** | Burt Constraint | Dimensionless, 0.0–1.0 | Average structural constraint across all time windows per node. |
-| **Dot colors** | Department | Categorical (Set3 colormap) | Each node is colored by its department label. Helps reveal whether departments cluster in specific regions of this space. |
-| **Red dashed line** | OLS regression line | — | Linear fit showing the overall trend. Annotated with R² and p-value. |
-| **Text box** | Spearman ρ | Dimensionless, −1.0 to +1.0 | Non-parametric rank correlation between homophily and constraint. A positive ρ means higher homophily is associated with higher constraint (supporting the thesis that department insularity → structural trapping). |
+| **X-axis** | Coleman Homophily | Dimensionless, ~0.5–1.0 | Fraction of same-department interactions. |
+| **Y-axis** | Burt Constraint | Dimensionless, 0.0–1.0 | Average structural constraint per node. |
+| **Dot colors** | Department | Categorical (Set3) | Color-coded by department. |
+| **Red dashed line** | OLS regression | — | Trend line with R² and p-value. |
+| **Text box** | Spearman ρ | −1.0 to +1.0 | Positive ρ = insularity correlates with trapping. |
 
-**What to look for:** Positive slope = homophily and constraint are correlated (department echo chambers → losing brokerage power). Department clusters in different quadrants = some departments are structurally advantaged vs. disadvantaged.
+**What to look for:** Positive slope = department echo chambers → losing brokerage power.
 
 ---
 
 #### `stage4_multilayer_graph.png` — Multiplex Network Visualization
 
-Side-by-side visualization of the two communication layers as network graphs. Shows *how* the organization looks structurally in email vs. face-to-face.
+Side-by-side network graphs of email (dashed edges) and proximity (solid edges) layers.
 
-| Panel | Layer | Edge Style | Notes |
-|-------|-------|-----------|-------|
-| **Left** | Email Layer | Dashed lines | Shows who emails whom. Edge thickness is proportional to email volume (weight, in number of emails). |
-| **Right** | Proximity Layer | Solid lines | Shows who is physically near whom. Edge thickness is proportional to contact weight (duration or frequency). |
+| Visual Element | Meaning | Notes |
+|----------------|---------|-------|
+| **Node position** | Spring-force layout | Same positions in both panels for comparison. |
+| **Node color** | Department | Categorical (Set3 colormap). |
+| **Edge thickness** | Edge weight | Thicker = more emails (left) or more proximity contact (right). |
 
-| Visual Element | Meaning | Unit / Scale |
-|----------------|---------|-------------|
-| **Node position** | Spring-force layout | Arbitrary 2D coordinates (dimensionless) | Both panels use the **exact same node positions** (computed from the combined graph with `seed=42`), so you can visually track the same person across panels. |
-| **Node color** | Department | Categorical (Set3 colormap) | Same department coloring as the scatter plot. |
-| **Node size** | Fixed | 100pt (all nodes equal size) | Size does not encode any metric. |
-| **Edge thickness** | Edge weight | Proportional, 1.0–4.0 pt linewidth | Thicker = more emails (left) or more proximity contact (right). Scaled as `1.0 + (weight / max_weight) × 3.0`. |
-| **Edge opacity** | Fixed | 0.6 alpha | Uniform transparency for readability. |
-
-**What to look for:** Clusters that appear in one layer but not the other = department silos that only exist in email or only in proximity. Nodes that are central in both panels = true organizational brokers. Nodes central in one panel but peripheral in the other = layer-specific influencers.
-
-**Note on node subset:** The plot shows ~35 nodes from the largest connected component of nodes that have edges in *both* layers. This is a deterministic subset (not random) — it selects the first 35 nodes from the overlap component, sorted by ID.
+**What to look for:** Clusters appearing in one layer but not the other = department silos.
 
 ---
 
 #### `stage4_cross_layer_closure.png` — Cross-Layer Closure Rate per Department
 
-A bar chart measuring how much each department's email relationships are *also* present as proximity relationships (and vice versa). This captures the "coherence" between digital and physical interaction.
+Bar chart of how much each department's email and proximity relationships overlap.
 
 | Axis | Metric | Unit / Scale | Notes |
 |------|--------|-------------|-------|
-| **X-axis** | Department | Categorical | Department names from `node_departments.csv` (e.g., DCAR, DG, DISQ, DMCT, DMI, DSE, DST, SCOM, SDOC, SFLE, SRH, SSI). Sorted by closure rate descending. |
-| **Y-axis** | Cross-layer Closure Rate | Dimensionless ratio, 0.0–1.0 | Weighted Jaccard-like overlap: `Σ min(w_email, w_prox) / Σ max(w_email, w_prox)` for all edges within a department. A value of 0.05 means only 5% of within-department interaction weight is shared across both layers. |
-| **Bar colors** | Rank-based gradient | Viridis colormap | Purely cosmetic — darker bars = higher rank. |
-| **Labels above bars** | Exact closure rate | 3 decimal places | Printed value for precise reading. |
+| **X-axis** | Department | Categorical | 12 departments sorted by closure rate. |
+| **Y-axis** | Closure Rate | Dimensionless, 0.0–1.0 | Weighted Jaccard overlap between email and proximity edges. |
 
-**What to look for:** Low closure rates across the board (< 0.1) = the email and proximity layers capture very different interaction patterns (expected for an asymmetric multiplex from different organizations). Departments with relatively higher closure = teams where digital and physical communication align.
+**What to look for:** Low rates (< 0.1) = email and proximity layers capture different interaction patterns.
 
 ---
 
 #### `stage4_temporal_heatmap.png` — Temporal Behavior Heatmap
 
-A nodes × months heatmap showing how a network metric changes over a simulated timeline (mapped to 2001–2016 months for visualization convenience).
+Nodes × months heatmap showing metric changes over a simulated timeline.
 
 | Axis | Metric | Unit / Scale | Notes |
 |------|--------|-------------|-------|
-| **X-axis** | Month | Calendar strings (e.g., Jan-01, Feb-01 …) | Weekly bin IDs are mapped to month strings via `year = 2001 + (bin_id // 12)`, `month = (bin_id % 12) + 1`. This is a display convention, not real calendar dates. |
-| **Y-axis** | Node | Top 20 most active nodes | Sorted by frequency of appearance. No y-axis labels (too many rows). |
-| **Color scale** | Metric Value | RdYlBu_r colormap, centered at 0 | In the current pipeline, this shows random-uniform predicted risk values (0.0–1.0). Blue = low, yellow = moderate, red = high. |
-| **Red dashed lines** | Scandal period annotations | — | Vertical lines marking "Early Crisis", "Peak Scandal", and "Bankruptcy" periods from the Enron timeline, if the data spans those months. |
+| **X-axis** | Month | Calendar strings | Bin IDs mapped to months for display. |
+| **Y-axis** | Node | Top 20 most active nodes | Sorted by activity frequency. |
+| **Color** | Metric Value | RdYlBu_r colormap | Blue = low, red = high. |
 
-**What to look for:** Horizontal color bands = a node's behavior is consistent over time. Vertical color bands = a systemic event affecting all nodes simultaneously. Transitions from blue to red = increasing risk or metric spike.
+**What to look for:** Vertical color bands = systemic events affecting all nodes simultaneously.
 
 ---
 
 ### Units Reference Table
 
-A quick reference for every metric's scale used across all plots:
-
 | Metric | Range | Unit | Interpretation |
 |--------|-------|------|---------------|
-| In-Degree | 0 – ~11,000 | Weighted edge count | Sum of incoming edge weights per week. Large because edges are weighted by volume. |
+| In-Degree | 0 – ~11,000 | Weighted edge count | Sum of incoming edge weights per week. |
 | Out-Degree | 0 – ~11,000 | Weighted edge count | Sum of outgoing edge weights per week. |
-| Burt Constraint | 0.0 – 1.0 | Dimensionless (proportion) | 0 = maximally unconstrained (perfect broker). 1 = maximally constrained (completely redundant). |
-| Effective Size | Negative – ~8,000 | Node count (adjusted) | Conceptually the number of non-redundant contacts. Can be negative when redundancy exceeds raw degree. |
-| Homophily Ratio | 0.5 – 1.0 | Dimensionless (fraction) | Fraction of interactions with same-department peers. 0.5 = baseline chance. 1.0 = exclusively same-department. |
-| Temporal Betweenness | 0.0 – 0.5 | Dimensionless (normalized) | Fraction of all shortest paths passing through this node. 0.0 = peripheral. 0.5 = on half of all shortest paths. |
-| Cross-layer Closure | 0.0 – 1.0 | Dimensionless (weighted Jaccard) | Overlap between email and proximity edges for a department. |
-| Drift Fraction | 0.0 – 1.0 | Proportion of population | Fraction of all active nodes experiencing drift. |
-| Predicted Drift Probability | 0.0 – 1.0 | Probability (sigmoid output) | Model's estimated probability that a node will drift next week. |
-| AUC-ROC | 0.5 – 1.0 | Dimensionless | 0.5 = random. 1.0 = perfect ranking. |
-| Average Precision | 0.0 – 1.0 | Dimensionless | Weighted mean precision at each recall threshold. |
-| Time Bin | 0 – 180 | Integer (weekly index) | Each unit = 1 week. Bin 0 = the first week of the earliest data source. |
+| Burt Constraint | 0.0 – 1.0 | Dimensionless | 0 = perfect broker. 1 = fully trapped. |
+| Effective Size | Negative – ~8,000 | Node count (adjusted) | Number of non-redundant contacts. |
+| Homophily Ratio | 0.5 – 1.0 | Dimensionless | Fraction of same-department interactions. |
+| Temporal Betweenness | 0.0 – 0.5 | Dimensionless | Fraction of shortest paths through this node. |
+| Cross-layer Closure | 0.0 – 1.0 | Dimensionless | Email-proximity edge overlap per department. |
+| Time Bin | 0 – 180 | Integer (weekly) | Each unit = 1 week. |
 
 ---
-
 ## Project File Map
 
 ### Pipeline Runner
@@ -388,7 +302,7 @@ A quick reference for every metric's scale used across all plots:
 | `scatter.py` | Homophily vs Constraint scatter plot with department colors, linear regression line, and Spearman correlation annotation. |
 | `barchart.py` | Cross-layer closure rate bar chart per department. Also contains the `compute_cross_layer_closure()` function that calculates weighted edge overlap between the two layers. |
 | `heatmap.py` | Temporal behavior heatmap (nodes × months) with Enron scandal period annotations. |
-| `drift.py` | **Brokerage drift visualizations.** Generates 6 separate publication-quality plots: broker trajectories, drift event waterfall, population drift rate, phase portrait, risk heatmap, and model evaluation curves. All plots use a consistent dark theme. |
+| `drift.py` | **Brokerage drift visualizations.** Generates 2 simple line charts: temporal betweenness over time and Burt constraint over time, both tracking the top 10 brokers. Uses a consistent dark theme. |
 
 ### `data/` — Raw Input Data
 | File | Description |

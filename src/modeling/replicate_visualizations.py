@@ -133,17 +133,11 @@ def run_replication():
         show_plot=False
     )
     
-    # 5. Brokerage Drift Dashboard (6-panel)
-    print("\nCreating Brokerage Drift Dashboard...")
-    preds_a = pd.read_csv(data_dir / 'processed' / 'preds_target_a.csv')
-    preds_b = pd.read_csv(data_dir / 'processed' / 'preds_target_b.csv')
-    targets = pd.read_csv(data_dir / 'processed' / 'modeling_targets.csv')
+    # 5. Brokerage Drift Plots (Betweenness + Constraint)
+    print("\nCreating Brokerage Drift Plots...")
     
     plot_brokerage_drift(
         diagnostics=diagnostics,
-        targets=targets,
-        preds_a=preds_a,
-        preds_b=preds_b,
         deps_dict=deps_dict,
         output_dir=str(output_dir),
         show_plot=False
