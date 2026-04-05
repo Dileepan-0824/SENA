@@ -39,7 +39,7 @@ def plot_prediction_alert(targets, preds_a, preds_b, diagnostics, save_prefix="o
         fig = plt.figure(figsize=(14, 12))
         fig.patch.set_facecolor(_BG)
         gs = gridspec.GridSpec(4, 1, hspace=0.3)
-        fig.suptitle(f"{target_name}: 1-Week Early Warning Prediction Map\\nTop 4 At-Risk Brokers", 
+        fig.suptitle(f"{target_name}: 1-Week Early Warning Prediction Map\nTop 4 At-Risk Brokers", 
                      fontsize=18, color=_TEXT, fontweight='bold', y=0.95)
         
         colors = ["#ff6b6b", "#6ec6ff", "#fbbf24", "#34d399"]
