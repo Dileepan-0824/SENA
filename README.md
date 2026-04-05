@@ -152,7 +152,19 @@ All plots are saved as separate images in the `outputs/` directory.
 
 ### Drift Plots (Early Warning Prediction Maps)
 
-These two faceted plots tie the model's 1-week warning predictions directly to the historical ground truth. 
+These two faceted plots tie the model's 1-week warning predictions directly to the historical ground truth. Each image contains 4 separate panels, telling the story of a single major "Broker" (a well-connected employee) over approximately 180 weeks.
+
+**How to read the three visual layers in each panel:**
+1. **The Solid Colored Line (The Reality):** This tracks the person's actual network metric (Betweenness or Constraint). If the line dips (or spikes), their influence in the network is drastically changing.
+2. **The Red Shaded Area (The Model's Brain):** This represents the **Predicted Risk (0% to 100%)** that the person is about to lose their influence. This is calculated *every single week* by looking backward at their behavior.
+3. **The Red Triangles ($\nabla$ or $\Delta$) (The Event):** These triangles only appear when a *major crash* in influence actually happened.
+
+**The Goal: "Did we see it coming?"**
+The magic of these plots happens on the X-axis (the Time Bin). If you trace a vertical line downward from Week 100, the data you see is:
+* The red shaded area = the model's computed risk exactly *at* Week 100.
+* The red triangle = a major crash that occurred exactly *at* Week 101.
+
+**How to know the engine worked:** Scan horizontally across a broker's timeline. You want to see the **Red Shaded Risk Area swell upward like a wave immediately to the left** of the **Red Triangles**. This means the model successfully flagged the person as "High Risk of Drift" *one week before* they plummeted out of the network's inner circle!
 
 #### `drift_prediction_target_a.png` — Target A (Betweenness Drop)
 
