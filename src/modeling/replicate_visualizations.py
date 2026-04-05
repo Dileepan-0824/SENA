@@ -14,8 +14,7 @@ from src.viz.scatter import plot_homophily_constraint_scatter
 from src.viz.barchart import plot_cross_layer_closure, compute_cross_layer_closure
 from src.viz.heatmap import plot_temporal_heatmap
 from src.viz.multilayer import plot_multilayer_graph
-from src.viz.drift import plot_brokerage_drift
-
+from src.viz.prediction import plot_prediction_alert
 def run_replication():
     print("Replicating exact Trajekt plots with SENA pipeline data...")
     
@@ -136,11 +135,17 @@ def run_replication():
     # 5. Brokerage Drift Plots (Betweenness + Constraint)
     print("\nCreating Brokerage Drift Plots...")
     
-    plot_brokerage_drift(
+    # Load predictions
+    targets = pd.read_csv(data_dir / 'processed' / 'modeling_targets.csv')
+    preds_a = pd.read_csv(data_dir / 'processed' / 'preds_target_a.csv')
+    preds_b = pd.read_csv(data_dir / 'processed' / 'preds_target_b.csv')
+    
+    plot_prediction_alert(
+        targets=targets,
+        preds_a=preds_a,
+        preds_b=preds_b,
         diagnostics=diagnostics,
-        deps_dict=deps_dict,
-        output_dir=str(output_dir),
-        show_plot=False
+        save_prefix=str(output_dir / "drift_prediction")
     )
     
     print("\nAll Visualizations Generated! Saved to `outputs/`.")

@@ -150,35 +150,37 @@ All plots are saved as separate images in the `outputs/` directory.
 
 ---
 
-### Drift Plots (Brokerage Drift Analysis)
+### Drift Plots (Early Warning Prediction Maps)
 
-Two simple line charts showing how the top 10 brokers change over ~180 weeks. Both plots track the same set of brokers (ranked by average betweenness) so you can cross-reference them.
+These two faceted plots tie the model's 1-week warning predictions directly to the historical ground truth. 
 
-#### `drift_temporal_betweenness.png` — Betweenness Over Time
+#### `drift_prediction_target_a.png` — Target A (Betweenness Drop)
 
-A line chart tracking each broker's **temporal betweenness centrality** week by week. This directly shows *who is a bridge and when they lose that position*.
+Maps the model's predicted risk against the actual drops in temporal betweenness for the Top 4 at-risk brokers.
 
-| Axis | Metric | Unit / Scale | Notes |
-|------|--------|-------------|-------|
-| **X-axis** | Time Bin (Week) | Integer, 0–180 | Each tick = one week of network activity. |
-| **Y-axis** | Temporal Betweenness | Dimensionless, 0.0–0.5 | Fraction of all shortest paths passing through this node. 0.40 = 40% of all paths. Smoothed with 5-week moving average. |
-| **Each line** | One broker | Color-coded by node | Legend shows Node ID and department. Labels at line endpoints. |
+| Axis / Element | Metric | Notes |
+|------|--------|-------|
+| **X-axis** | Time Bin (Week) | $t$. The risk computed at $t$ predicts the event occurring between $t$ and $t+1$. |
+| **Left Y-axis** | True Metric (Betweenness) | Solid colored line showing actual network influence over time. |
+| **Right Y-axis** | Predicted Risk | Red dashed area (0.0 to 1.0 probability) showing model's forward warning. |
+| **Red Triangles ($\nabla$)** | Actual Target Event | The exact moment the drop occurred (>0.1 drop from previous week). |
 
-**What to look for:** Lines trending downward = a broker losing influence over time (drift). Sharp drops = sudden structural changes. Lines staying flat = stable brokers. If betweenness drops AND constraint rises for the same node → classic brokerage drift.
+**What to look for:** Does the red risk area spike up *just before* the red triangle drops? If so, the prediction accurately fired 1 week before the crash.
 
 ---
 
-#### `drift_burt_constraint.png` — Constraint Over Time
+#### `drift_prediction_target_b.png` — Target B (Constraint Spike)
 
-A line chart tracking each broker's **Burt constraint** week by week. This shows *how trapped each broker becomes in their own clique over time*.
+Maps the model's predicted risk against the actual spikes in Burt Constraint (getting trapped in a clique) for the Top 4 at-risk brokers.
 
-| Axis | Metric | Unit / Scale | Notes |
-|------|--------|-------------|-------|
-| **X-axis** | Time Bin (Week) | Integer, 0–180 | Same weekly bins as betweenness plot. |
-| **Y-axis** | Burt Constraint | Dimensionless, 0.0–1.0 | 0 = completely unconstrained (perfect broker). 1 = fully trapped (all contacts know each other). Smoothed with 5-week moving average. |
-| **Each line** | One broker | Color-coded by node | Same node-to-color mapping as the betweenness plot. |
+| Axis / Element | Metric | Notes |
+|------|--------|-------|
+| **X-axis** | Time Bin (Week) | Same as above. |
+| **Left Y-axis** | True Metric (Constraint) | Solid colored line showing how constrained the broker actually was. |
+| **Right Y-axis** | Predicted Risk | Red dashed area showing predicted risk of getting trapped. |
+| **Red Triangles ($\Delta$)** | Actual Target Event | The exact moment the spike occurred (>0.2 jump from previous week). |
 
-**What to look for:** Lines trending upward = a broker getting increasingly trapped. A node with rising constraint AND falling betweenness is undergoing textbook brokerage drift.
+**What to look for:** Look for the red risk area spiking *just before* the red triangle ($\Delta$) fires upward.
 
 ---
 
